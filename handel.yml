@@ -8,7 +8,7 @@ environments:
       type: lambda
       path_to_code: .
       runtime: python3.6
-      handler: index.handler
+      handler: ical2slackstatus.index.handler
       timeout: 300
       tags:
         data-sensitivity: public
@@ -18,11 +18,18 @@ environments:
     configbucket:
       type: s3
       tags:
-        data-sensitivity: public
+        data-sensitivity: internal
         team: AD-Student Life Applications
-    schedule:
+    # 7am to 7pm MT expressed in UTC MON-FRI every 15 minutes
+    schedule1:
       type: cloudwatchevent
-      schedule: 'cron(0/15 * * * ? *)'
+      schedule: 'cron(0/15 13-23 ? * MON-FRI *)'
+      event_consumers:
+      - service_name: function
+        event_input: '{}'
+    schedule2:
+      type: cloudwatchevent
+      schedule: 'cron(0/15 0-1 ? * TUE-SAT *)'
       event_consumers:
       - service_name: function
         event_input: '{}'

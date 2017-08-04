@@ -1,23 +1,19 @@
-version: 0.1
+version: 0.2
 
-environment_variables:
-  plaintext:
-    key: "value"
-    
 phases:
   install:
     commands:
-      - git clone https://github.com/byu-oit/lambda_utils.git utils
-      - pip install -r requirements.txt -t .
+      #- git clone https://github.com/byu-oit/lambda_utils.git utils
+      pip install -r requirements.txt -t .
   pre_build:
     commands:
-      - python ical2tk.py test --verbose True
+      #- python ical2slackstatus.py test --verbose True
   build:
     commands:
-      - echo "Nothing to run in the build phase..."
+      #- echo "Nothing to run in the build phase..."
   post_build:
     commands:
-      - echo "Nothing to run in the post_build phase..."
+      #- echo "Nothing to run in the post_build phase..."
 artifacts:
   files:
     - '**/*'
