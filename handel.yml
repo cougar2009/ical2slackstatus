@@ -1,0 +1,28 @@
+version: 1
+
+name: ical2slackstatus
+
+environments:
+  prd:
+    function:
+      type: lambda
+      path_to_code: .
+      runtime: python3.6
+      handler: index.handler
+      timeout: 300
+      tags:
+        data-sensitivity: public
+        team: AD-Student Life Applications
+      dependencies:
+      - configbucket
+    configbucket:
+      type: s3
+      tags:
+        data-sensitivity: public
+        team: AD-Student Life Applications
+    schedule:
+      type: cloudwatchevent
+      schedule: 'cron(0/15 * * * ? *)'
+      event_consumers:
+      - service_name: function
+        event_input: '{}'

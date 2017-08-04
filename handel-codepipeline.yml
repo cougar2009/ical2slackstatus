@@ -1,0 +1,18 @@
+version: 1
+name: ical2slackstatus
+
+pipelines:
+  prd:
+    phases:
+    - type: github
+      name: GitHub
+      owner: byu-oit
+      repo: ical2slackstatus
+      branch: master
+    - type: codebuild
+      name: Build
+      build_image: aws/codebuild/python:3.5.2
+    - type: handel
+      name: PrdDeploy
+      environments_to_deploy:
+      - prd
