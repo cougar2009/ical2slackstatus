@@ -112,8 +112,8 @@ def get_new_status(calendar_url):
                 'status_emoji': ':calendar:'
             }
     return {
-        'status_text': 'Likely at my desk',
-        'status_emoji': ':european_post_office:'
+        'status_text': '',
+        'status_emoji': ''
     }
 
 def handler(event, context):
