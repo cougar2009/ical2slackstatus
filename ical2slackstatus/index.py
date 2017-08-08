@@ -14,7 +14,6 @@
 # limitations under the License.
 
 import os
-import pdb
 import fire
 import yaml
 import json
@@ -100,14 +99,18 @@ def get_new_status(calendar_url):
     events = get_today_events(calendar_url)
     now = pytz.utc.localize(datetime.datetime.now())
     for event in events:
-        if event['dtstart'] >= now < event['dtend']:
+        if now >= event['dtstart'] and now < event['dtend']:
+            if not event['location'].strip():
+                location = 'at my desk'
+            else:
+                location = 'in ' + event['location']
             return {
-                'status_text': event['summary'],
+                'status_text': "{} {}".format(event['summary'], location),
                 'status_emoji': ':calendar:'
             }
     return {
-        'status_text': 'Where am I?',
-        'status_emoji': ':ghost:'
+        'status_text': '',
+        'status_emoji': ''
     }
 
 def handler(event, context):

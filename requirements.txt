@@ -1,8 +1,6 @@
 requests
 pyaml
-python-dateutil
 fire
-byu_ws_sdk
 boto3
 pytz
 icalendar
