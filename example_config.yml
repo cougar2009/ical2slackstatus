@@ -10,6 +10,7 @@
 # Right click on "Subscribe to calendar" and select "Copy Link Address"
 # paste that as the value of calendar_url here
 calendar_url: http://mail.byu.edu/owa/calendar/blahblahblah/Calendar/calendar.ics
+
 # Go to https://api.slack.com/apps
 # Click "Create New App"
 # Enter "ical2slackstatus" in App Name and select BYU/OIT in Development Slack Team and then click "Create App"
