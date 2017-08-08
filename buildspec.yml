@@ -7,6 +7,7 @@ phases:
       pip install -r requirements.txt -t .
   pre_build:
     commands:
+      #TODO enable the tests
       #- python ical2slackstatus.py test --verbose True
   build:
     commands:

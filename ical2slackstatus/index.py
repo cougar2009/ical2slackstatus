@@ -19,6 +19,7 @@ import yaml
 import json
 import pytz
 import boto3
+import textwrap
 import datetime
 import requests
 import urllib.request
@@ -45,6 +46,7 @@ def get_config_objects():
     config_objects = []
     for filename in get_bucket_filelist():
         config_object = get_s3_yaml_contents(filename)
+        config_object['net_id'] = filename.split('.')[0] # netid for netid.yml
         config_objects.append(config_object)
     return config_objects
 
@@ -88,7 +90,7 @@ def set_status(token, profile):
     }
     response = requests.post("https://slack.com/api/users.profile.set", params=params)
     response.raise_for_status()
-    return response.json()['ok'] == True
+    return response.json()['ok'] == True, response.json()
 
 
 def test(verbose=False):
@@ -105,7 +107,8 @@ def get_new_status(calendar_url):
             else:
                 location = 'in ' + event['location']
             return {
-                'status_text': "{} {}".format(event['summary'], location),
+                # need to truncate the status to at most 100 characters as that's the max the users.profile.set API allows
+                'status_text': "{} {}".format(textwrap.shorten(event['summary'], 100-1-len(location)), location),
                 'status_emoji': ':calendar:'
             }
     return {
@@ -117,7 +120,12 @@ def handler(event, context):
     configs = get_config_objects()
     for config in configs:
         profile = get_new_status(config['calendar_url'])
-        set_status(config['token'], profile)
+        print("Setting {}'s status to {}".format(config['net_id'], profile))
+        status_set, detail = set_status(config['token'], profile)
+        if not status_set:
+            print("Error setting {}'s status.  Details are: {}".format(config['net_id'], detail))
+        else:
+            print("Set {}'s status successfully".format(config['net_id']))
 
 
 if __name__ == '__main__':
