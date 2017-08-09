@@ -19,12 +19,16 @@ import yaml
 import json
 import pytz
 import boto3
+import logging
 import textwrap
 import datetime
 import requests
 import urllib.request
 from icalendar import Calendar
 
+logging.basicConfig() # necessary for anything to print
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 bucketname = os.environ['S3_ICAL2SLACKSTATUS_PRD_CONFIGBUCKET_BUCKET_NAME']
 
 def get_s3_yaml_contents(filename):
@@ -65,9 +69,13 @@ def get_today_events(cal_url):
         if event.decoded('dtstart').__class__ == datetime.date:
             if event.decoded('dtstart') == today:
                 _today_events.append(event)
+            else:
+                logger.debug(f"{event} is not for today")
         elif event.decoded('dtstart').__class__ == datetime.datetime:
             if event.decoded('dtstart').date() == today:
                 _today_events.append(event)
+            else:
+                logger.debug(f"{event} is not for today")
     return [parse_event(event) for event in _today_events]
 
 
@@ -102,6 +110,7 @@ def get_new_status(calendar_url):
     now = pytz.utc.localize(datetime.datetime.now())
     for event in events:
         if now >= event['dtstart'] and now < event['dtend']:
+            logger.debug(f"{event} matched")
             if not event['location'].strip():
                 location = 'at my desk'
             else:
@@ -111,6 +120,8 @@ def get_new_status(calendar_url):
                 'status_text': "{} {}".format(textwrap.shorten(event['summary'], 100-1-len(location)), location),
                 'status_emoji': ':calendar:'
             }
+        else:
+            logger.debug(f"{event} did not match")
     return {
         'status_text': '',
         'status_emoji': ''
@@ -121,14 +132,14 @@ def handler(event, context):
     for config in configs:
         try:
             profile = get_new_status(config['calendar_url'])
-            print("Setting {}'s status to {}".format(config['net_id'], profile))
+            logger.info("Setting {}'s status to {}".format(config['net_id'], profile))
             status_set, detail = set_status(config['token'], profile)
             if not status_set:
-                print("Error setting {}'s status.  Details are: {}".format(config['net_id'], detail))
+                logger.error("Error setting {}'s status.  Details are: {}".format(config['net_id'], detail))
             else:
-                print("Set {}'s status successfully".format(config['net_id']))
+                logger.info("Set {}'s status successfully".format(config['net_id']))
         except Exception as e:
-            print("Exception raised while trying to set {}'s status.  Exeption was {}".format(config['net_id'], repr(e)))
+            logger.error("Exception raised while trying to set {}'s status.  Exeption was {}".format(config['net_id'], repr(e)))
 
 
 if __name__ == '__main__':
