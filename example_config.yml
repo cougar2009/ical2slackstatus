@@ -20,4 +20,4 @@ calendar_url: http://mail.byu.edu/owa/calendar/blahblahblah/Calendar/calendar.ic
 # At the top of the page, click "Install App to Team"
 # Click "Authorize"
 # Copy your OAuth Access Token and paste it below
-slack_token: xoxp-1234567890-1234567890-123456789012-12abcd1ef234567fab890cd1ef2345ab
+token: xoxp-1234567890-1234567890-123456789012-12abcd1ef234567fab890cd1ef2345ab
