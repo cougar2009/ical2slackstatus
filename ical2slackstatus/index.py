@@ -119,13 +119,16 @@ def get_new_status(calendar_url):
 def handler(event, context):
     configs = get_config_objects()
     for config in configs:
-        profile = get_new_status(config['calendar_url'])
-        print("Setting {}'s status to {}".format(config['net_id'], profile))
-        status_set, detail = set_status(config['token'], profile)
-        if not status_set:
-            print("Error setting {}'s status.  Details are: {}".format(config['net_id'], detail))
-        else:
-            print("Set {}'s status successfully".format(config['net_id']))
+        try:
+            profile = get_new_status(config['calendar_url'])
+            print("Setting {}'s status to {}".format(config['net_id'], profile))
+            status_set, detail = set_status(config['token'], profile)
+            if not status_set:
+                print("Error setting {}'s status.  Details are: {}".format(config['net_id'], detail))
+            else:
+                print("Set {}'s status successfully".format(config['net_id']))
+        except Exception as e:
+            print("Exception raised while trying to set {}'s status.  Exeption was {}".format(config['net_id'], repr(e)))
 
 
 if __name__ == '__main__':
