@@ -128,6 +128,8 @@ def get_new_status(calendar_url):
     }
 
 def handler(event, context):
+    if 'loglevel' in event and event['loglevel'] in ['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
+        logger.setLevel(event['loglevel'])
     configs = get_config_objects()
     for config in configs:
         try:
