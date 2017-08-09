@@ -101,6 +101,18 @@ def set_status(token, profile):
     return response.json()['ok'] == True, response.json()
 
 
+def today_at(hour):
+    """
+    Creates a datetime object for today in UTC at hour (in military time) in the
+    current timezone.
+    For example today_at(17) would give you a datetime object in UTC
+    that represents 5pm today in the current timezone.
+    """
+    result_naive = datetime.datetime.combine(datetime.date.today(), datetime.time(hour, 0))
+    tz = pytz.timezone('America/Denver')
+    utc_dt = tz.localize(result_naive, is_dst=None).astimezone(pytz.utc)
+    return utc_dt
+
 def test(verbose=False):
     import doctest
     doctest.testmod(verbose=verbose)
@@ -122,14 +134,25 @@ def get_new_status(calendar_url):
             }
         else:
             logger.debug(f"{event} did not match")
-    return {
-        'status_text': '',
-        'status_emoji': ''
-    }
+    if now >= today_at(9) and now < today_at(17): # Everyone is generally here from 9am to 4pm
+        working_default = {
+            'status_text': 'Probably working hard at my desk',
+            'status_emoji': ':computer_rage:'
+        }
+        logger.info(f"During working hours.  Using working default {working_default}")
+        return working_default
+    else:
+        non_working_hours_default = {
+            'status_text': '',
+            'status_emoji': ''
+        }
+        logger.info(f"Not working hours.  Using the non working hours default {non_working_hours_default}")
+        return non_working_hours_default
 
 def handler(event, context):
-    if 'loglevel' in event and event['loglevel'] in ['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
-        logger.setLevel(event['loglevel'])
+    if 'loglevel' in event:
+        if event['loglevel'] in ['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
+            logger.setLevel(event['loglevel'])
     configs = get_config_objects()
     for config in configs:
         try:

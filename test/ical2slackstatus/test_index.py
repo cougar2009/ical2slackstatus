@@ -1,9 +1,8 @@
 import os
-os.environ['S3_ICAL2SLACKSTATUS_PRD_CONFIGBUCKET_BUCKET_NAME'] = "MyFakeNonexistentBucket"
-
+import pytz
 from unittest.mock import patch, MagicMock
-
-from ical2slackstatus.index import handler
+os.environ['S3_ICAL2SLACKSTATUS_PRD_CONFIGBUCKET_BUCKET_NAME'] = "MyFakeNonexistentBucket"
+from ical2slackstatus.index import handler, today_at
 
 @patch('ical2slackstatus.index.boto3')
 def test_handler(boto3_mock):
@@ -19,3 +18,10 @@ def test_handler(boto3_mock):
     mock_s3_client.get_object.side_effect = [get_object_mock]
     handler({}, {})
     del os.environ['S3_ICAL2SLACKSTATUS_PRD_CONFIGBUCKET_BUCKET_NAME']
+
+def test_today_at():
+    seven_am = today_at(7)
+    import datetime
+    assert seven_am.tzinfo
+    assert seven_am.tzinfo == pytz.utc
+    assert seven_am.hour > 7
