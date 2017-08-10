@@ -124,7 +124,7 @@ def get_new_status(calendar_url):
         if now >= event['dtstart'] and now < event['dtend']:
             logger.debug(f"{event} matched")
             if not event['location'].strip():
-                location = 'at my desk'
+                location = 'likely at my desk'
             else:
                 location = 'in ' + event['location']
             return {
