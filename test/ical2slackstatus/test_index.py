@@ -77,3 +77,10 @@ def test_simple_builder():
 
     result = index.simple_builder(test['summary'], test['dtstart'], test['dtend'], test['location'])
     assert result == test
+
+
+def test_date_to_datetime():
+    to_convert = datetime.datetime.utcnow().date()
+    expected_result = pytz.utc.localize(datetime.datetime(to_convert.year, to_convert.month, to_convert.day, 14, 00))
+    result = index.date_to_datetime(to_convert)
+    assert result == expected_result
