@@ -26,10 +26,10 @@ environments:
       schedule: 'cron(0/15 13-23 ? * MON-FRI *)'
       event_consumers:
       - service_name: function
-        event_input: '{}'
+        event_input: '{"loglevel": "INFO"}'
     schedule2:
       type: cloudwatchevent
       schedule: 'cron(0/15 0-1 ? * TUE-SAT *)'
       event_consumers:
       - service_name: function
-        event_input: '{}'
+        event_input: '{"loglevel": "INFO"}'

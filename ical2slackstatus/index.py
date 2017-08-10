@@ -19,6 +19,7 @@ import yaml
 import json
 import pytz
 import boto3
+import logging
 import textwrap
 import datetime
 import requests
@@ -26,6 +27,9 @@ import urllib.request
 from icalendar import Calendar
 from dateutil.rrule import rrulestr
 
+logging.basicConfig() # necessary for anything to print
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 bucketname = os.environ['S3_ICAL2SLACKSTATUS_PRD_CONFIGBUCKET_BUCKET_NAME']
 
 
@@ -72,9 +76,13 @@ def get_today_events(cal_url):
         if event.decoded('dtstart').__class__ == datetime.date:
             if event.decoded('dtstart') == today:
                 _today_events.append(parse_event(event))
+            else:
+                logger.debug(f"{event} is not for today")
         elif event.decoded('dtstart').__class__ == datetime.datetime:
             if event.decoded('dtstart').date() == today:
                 _today_events.append(parse_event(event))
+            else:
+                logger.debug(f"{event} is not for today")
     return _today_events
 
 
@@ -150,6 +158,18 @@ def set_status(token, profile):
     return response.json()['ok'] == True, response.json()
 
 
+def today_at(hour):
+    """
+    Creates a datetime object for today in UTC at hour (in military time) in the
+    current timezone.
+    For example today_at(17) would give you a datetime object in UTC
+    that represents 5pm today in the current timezone.
+    """
+    result_naive = datetime.datetime.combine(datetime.date.today(), datetime.time(hour, 0))
+    tz = pytz.timezone('America/Denver')
+    utc_dt = tz.localize(result_naive, is_dst=None).astimezone(pytz.utc)
+    return utc_dt
+
 def test(verbose=False):
     import doctest
     doctest.testmod(verbose=verbose)
@@ -160,8 +180,9 @@ def get_new_status(calendar_url):
     now = pytz.utc.localize(datetime.datetime.now())
     for event in events:
         if now >= event['dtstart'] and now < event['dtend']:
+            logger.debug(f"{event} matched")
             if not event['location'].strip():
-                location = 'at my desk'
+                location = 'likely at my desk'
             else:
                 location = 'in ' + event['location']
             return {
@@ -169,25 +190,40 @@ def get_new_status(calendar_url):
                 'status_text': "{} {}".format(textwrap.shorten(event['summary'], 100-1-len(location)), location),
                 'status_emoji': ':calendar:'
             }
-    return {
-        'status_text': '',
-        'status_emoji': ''
-    }
+        else:
+            logger.debug(f"{event} did not match")
+    if now >= today_at(9) and now < today_at(17): # Everyone is generally here from 9am to 4pm
+        working_default = {
+            'status_text': 'Probably working hard at my desk',
+            'status_emoji': ':computer_rage:'
+        }
+        logger.info(f"During working hours.  Using working default {working_default}")
+        return working_default
+    else:
+        non_working_hours_default = {
+            'status_text': '',
+            'status_emoji': ''
+        }
+        logger.info(f"Not working hours.  Using the non working hours default {non_working_hours_default}")
+        return non_working_hours_default
 
 
 def handler(event, context):
+    if 'loglevel' in event:
+        if event['loglevel'] in ['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
+            logger.setLevel(event['loglevel'])
     configs = get_config_objects()
     for config in configs:
         try:
             profile = get_new_status(config['calendar_url'])
-            print("Setting {}'s status to {}".format(config['net_id'], profile))
+            logger.info("Setting {}'s status to {}".format(config['net_id'], profile))
             status_set, detail = set_status(config['token'], profile)
             if not status_set:
-                print("Error setting {}'s status.  Details are: {}".format(config['net_id'], detail))
+                logger.error("Error setting {}'s status.  Details are: {}".format(config['net_id'], detail))
             else:
-                print("Set {}'s status successfully".format(config['net_id']))
+                logger.info("Set {}'s status successfully".format(config['net_id']))
         except Exception as e:
-            print("Exception raised while trying to set {}'s status.  Exeption was {}".format(config['net_id'], repr(e)))
+            logger.error("Exception raised while trying to set {}'s status.  Exeption was {}".format(config['net_id'], repr(e)))
 
 
 if __name__ == '__main__':
