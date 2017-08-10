@@ -192,7 +192,7 @@ def get_new_status(calendar_url):
             }
         else:
             logger.debug(f"{event} did not match")
-    if now >= today_at(9) and now < today_at(17): # Everyone is generally here from 9am to 4pm
+    if now >= today_at(9) and now < today_at(17):
         working_default = {
             'status_text': 'Probably working hard at my desk',
             'status_emoji': ':computer_rage:'
@@ -223,7 +223,7 @@ def handler(event, context):
             else:
                 logger.info("Set {}'s status successfully".format(config['net_id']))
         except Exception as e:
-            logger.error("Exception raised while trying to set {}'s status.  Exeption was {}".format(config['net_id'], repr(e)))
+            logger.error("Exeption raised while trying to set {}'s status.  Exeption was {}".format(config['net_id'], repr(e)))
 
 
 if __name__ == '__main__':
