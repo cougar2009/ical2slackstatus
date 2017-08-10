@@ -100,7 +100,10 @@ def get_rrule(event):
     """
     Function takes  an icalendar event and returns a dateutils.rrule
     """
-    _dtstart = event.get('dtstart').dt.strftime('%Y%m%dT%H%M%S%z')
+    dtstart = event.get('dtstart').dt
+    if dtstart.__class__ == datetime.date:
+        dtstart = date_to_datetime(dtstart)
+    _dtstart = dtstart.strftime('%Y%m%dT%H%M%S%z')
     rules_text = "DTSTART:{}\n".format(_dtstart)
     rules_text = rules_text + '\n'.join([line for line in event.content_lines() if line.startswith('RRULE')])
     return rrulestr(rules_text)
@@ -111,9 +114,8 @@ def recurring_parser(event):
     function takes in an event and builds the recurring rules and checks if an
     occurance is set for today if it is returns simplified dictionary
     """
-    LOCAL = pytz.timezone('America/Denver')
     one_day = datetime.timedelta(days=1)
-    _now = LOCAL.localize(datetime.datetime.now())
+    _now = pytz.utc.localize(datetime.datetime.utcnow())
     _yesterday = _now - one_day
     _duration = event.get('dtstart').dt - event.get('dtend').dt
     rule = get_rrule(event)
@@ -169,6 +171,17 @@ def today_at(hour):
     tz = pytz.timezone('America/Denver')
     utc_dt = tz.localize(result_naive, is_dst=None).astimezone(pytz.utc)
     return utc_dt
+
+
+def date_to_datetime(date):
+    """
+    helper function to handle converting date to datetime with tzinfo
+    default to 2pm utc time == 8 or 9 am mountain
+    """
+    _result = datetime.datetime(date.year, date.month, date.day, 14, 00)
+    _result = pytz.utc.localize(_result)
+    return _result
+
 
 def test(verbose=False):
     import doctest
