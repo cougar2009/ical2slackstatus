@@ -24,8 +24,10 @@ import datetime
 import requests
 import urllib.request
 from icalendar import Calendar
+from dateutil.rrule import rrulestr
 
 bucketname = os.environ['S3_ICAL2SLACKSTATUS_PRD_CONFIGBUCKET_BUCKET_NAME']
+
 
 def get_s3_yaml_contents(filename):
     assert isinstance(bucketname, str)
@@ -62,23 +64,78 @@ def get_today_events(cal_url):
     events = cal.walk('vevent')
     _today_events = []
     for event in events:
+        if event.get('RRULE'):
+            _event = recurring_parser(event)
+            if _event:
+                _today_events.append(_event)
+            continue
         if event.decoded('dtstart').__class__ == datetime.date:
             if event.decoded('dtstart') == today:
-                _today_events.append(event)
+                _today_events.append(parse_event(event))
         elif event.decoded('dtstart').__class__ == datetime.datetime:
             if event.decoded('dtstart').date() == today:
-                _today_events.append(event)
-    return [parse_event(event) for event in _today_events]
+                _today_events.append(parse_event(event))
+    return _today_events
 
 
-def parse_event(event):
+def parse_location(event):
+    """
+    Helper function to return location if one is present
+    """
     location = ''
     if event.get('location'):
         location = event.decoded('location').decode('UTF-8')
+    return location
+
+
+def get_rrule(event):
+    """
+    Function takes  an icalendar event and returns a dateutils.rrule
+    """
+    _dtstart = event.get('dtstart').dt.strftime('%Y%m%dT%H%M%S%z')
+    rules_text = "DTSTART:{}\n".format(_dtstart)
+    rules_text = rules_text + '\n'.join([line for line in event.content_lines() if line.startswith('RRULE')])
+    return rrulestr(rules_text)
+
+
+def recurring_parser(event):
+    """
+    function takes in an event and builds the recurring rules and checks if an
+    occurance is set for today if it is returns simplified dictionary
+    """
+    LOCAL = pytz.timezone('America/Denver')
+    one_day = datetime.timedelta(days=1)
+    _now = LOCAL.localize(datetime.datetime.now())
+    _yesterday = _now - one_day
+    _duration = event.get('dtstart').dt - event.get('dtend').dt
+    rule = get_rrule(event)
+    _next = rule.after(_yesterday)
+    if _next and _next.date() == _now.date():
+        dtend = _next - _duration
+        _summary = event.decoded('summary').decode('UTF-8')
+        _location = parse_location(event)
+        return simple_builder(_summary, _next, dtend, _location)
+
+
+def parse_event(event):
+    """
+    helper function to parse an event into simple form
+    """
+    summary = event.decoded('summary').decode('UTF-8')
+    start = event.decoded('dtstart')
+    end = event.decoded('dtend')
+    location = parse_location(event)
+    return simple_builder(summary, start, end, location)
+
+
+def simple_builder(summary, start, end, location):
+    """
+    helper function builds simple dictionary
+    """
     return {
-        'summary': event.decoded('summary').decode('UTF-8'),
-        'dtstart': event.decoded('dtstart'),
-        'dtend': event.decoded('dtend'),
+        'summary': summary,
+        'dtstart': start,
+        'dtend': end,
         'location': location
     }
 
@@ -96,6 +153,7 @@ def set_status(token, profile):
 def test(verbose=False):
     import doctest
     doctest.testmod(verbose=verbose)
+
 
 def get_new_status(calendar_url):
     events = get_today_events(calendar_url)
@@ -115,6 +173,7 @@ def get_new_status(calendar_url):
         'status_text': '',
         'status_emoji': ''
     }
+
 
 def handler(event, context):
     configs = get_config_objects()
