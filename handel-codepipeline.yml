@@ -11,7 +11,7 @@ pipelines:
       branch: master
     - type: codebuild
       name: Build
-      build_image: aws/codebuild/python:3.5.2
+      build_image: python:3.6
     - type: handel
       name: PrdDeploy
       environments_to_deploy:
