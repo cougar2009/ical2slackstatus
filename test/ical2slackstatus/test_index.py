@@ -34,7 +34,8 @@ def simple_event():
         'dtstart': _now,
         'dtend': _later,
         'location': '',
-        'status': 'OOF'
+        'status': 'OOF',
+        'emoji': None
     }
 
 @pytest.mark.skip
