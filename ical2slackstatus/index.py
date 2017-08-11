@@ -14,6 +14,7 @@
 # limitations under the License.
 
 import os
+import re
 import fire
 import yaml
 import json
@@ -121,12 +122,13 @@ def recurring_parser(event):
     rule = get_rrule(event)
     _next = rule.after(_yesterday)
     if _next and _next.date() == _now.date():
+        # in order to fix recuring event with exceptions or edits the psuedo logic is the following
+        # if event today with recurrence id and where summary == recurrec summary recurrent event
         dtend = _next - _duration
         _summary = event.decoded('summary').decode('UTF-8')
         _location = parse_location(event)
         _status = event.decoded('X-MICROSOFT-CDO-BUSYSTATUS').decode('UTF-8')
         return simple_builder(_summary, _next, dtend, _location, _status)
-
 
 def parse_event(event):
     """
@@ -144,13 +146,24 @@ def simple_builder(summary, start, end, location, status):
     """
     helper function builds simple dictionary
     """
+    emoji, summary = emoji_from_summary(summary)
     return {
         'summary': summary,
         'dtstart': start,
         'dtend': end,
         'location': location,
-        'status': status
+        'status': status,
+        'emoji': emoji
     }
+
+
+def emoji_from_summary(summary):
+    m = re.match(r"^(.*)(:[a-z_]+:)(.*)$", summary, re.IGNORECASE)
+    if m:
+        new_summary = (m.group(1).strip() + ' ' + m.group(3).strip()).strip()
+        return m.group(2), new_summary
+    else:
+        return None, summary
 
 
 def set_status(token, profile):
@@ -184,11 +197,6 @@ def date_to_datetime(date):
     _result = datetime.datetime(date.year, date.month, date.day, 14, 00)
     _result = pytz.utc.localize(_result)
     return _result
-
-
-def test(verbose=False):
-    import doctest
-    doctest.testmod(verbose=verbose)
 
 
 def get_new_status(calendar_url):

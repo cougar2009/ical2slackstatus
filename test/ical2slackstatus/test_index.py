@@ -87,12 +87,32 @@ def test_simple_builder():
         'dtstart': _now,
         'dtend': _now,
         'location': "FakeLocation",
-        'status': 'OOF'
+        'status': 'OOF',
+        'emoji': None
     }
 
     result = index.simple_builder(test['summary'], test['dtstart'], test['dtend'], test['location'], test['status'])
     assert result == test
 
+def test_emoji_at_start_of_summary():
+    emoji, summary = index.emoji_from_summary(":some_emoji: Some Summary")
+    assert emoji == ":some_emoji:"
+    assert summary == "Some Summary"
+
+def test_emoji_at_middle_of_summary():
+    emoji, summary = index.emoji_from_summary("Some :some_emoji: Summary")
+    assert emoji == ":some_emoji:"
+    assert summary == "Some Summary"
+
+def test_emoji_at_end_of_summary():
+    emoji, summary = index.emoji_from_summary("Some Summary :some_emoji:")
+    assert emoji == ":some_emoji:"
+    assert summary == "Some Summary"
+
+def test_no_emoji_in_summary():
+    emoji, summary = index.emoji_from_summary("Some Summary")
+    assert emoji == None
+    assert summary == "Some Summary"
 
 def test_date_to_datetime():
     to_convert = datetime.datetime.utcnow().date()

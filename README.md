@@ -32,5 +32,4 @@ on this github repo.  Pull requests are welcome.
 Discussions around this are done in the #crazy-friday channel in slack.
 
 ## TODO
-* (nate) Fix any issues filed on this repo
 * Add a way to change the emoji based on the name of the event or the location of the event
