@@ -219,7 +219,7 @@ def get_status_for_time(events, now):
             return {
                 # need to truncate the status to at most 100 characters as that's the max the users.profile.set API allows
                 'status_text': "{} {}".format(textwrap.shorten(event['summary'], 100-1-len(location)), location),
-                'status_emoji': ':calendar:'
+                'status_emoji': event.get('emoji', ':calendar:')
             }
         else:
             logger.debug(f"{event} did not match")

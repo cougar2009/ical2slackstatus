@@ -147,3 +147,16 @@ def test_get_status_for_time_not_out_of_office_location(simple_event):
     simple_event['location'] = 'FakeLocation'
     result = index.get_status_for_time([simple_event], now)
     assert result['status_text'] == 'FakeEvent in FakeLocation'
+
+
+def test_get_status_default_emoji(simple_event):
+    now = pytz.utc.localize(datetime.datetime.utcnow())
+    result = index.get_status_for_time([simple_event], now)
+    assert result['status_emoji'] == ':calendar:'
+
+
+def test_get_status_manual_emoji(simple_event):
+    now = pytz.utc.localize(datetime.datetime.utcnow())
+    simple_event['emoji'] = ':test:'
+    result = index.get_status_for_time([simple_event], now)
+    assert result['status_emoji'] == ':test:'
