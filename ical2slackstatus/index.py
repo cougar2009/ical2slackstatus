@@ -30,7 +30,7 @@ from dateutil.rrule import rrulestr
 logging.basicConfig() # necessary for anything to print
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
-bucketname = os.environ['S3_ICAL2SLACKSTATUS_PRD_CONFIGBUCKET_BUCKET_NAME']
+bucketname = os.environ.get('S3_ICAL2SLACKSTATUS_PRD_CONFIGBUCKET_BUCKET_NAME')
 
 
 def get_s3_yaml_contents(filename):

@@ -23,7 +23,7 @@ def recur_event():
     event.add('location', 'FakeLocation')
     return event
 
-
+@pytest.mark.skip
 @patch('ical2slackstatus.index.boto3')
 def test_handler(boto3_mock):
     mock_s3_client = boto3_mock.client.return_value = MagicMock()
