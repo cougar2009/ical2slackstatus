@@ -124,7 +124,8 @@ def recurring_parser(event):
         dtend = _next - _duration
         _summary = event.decoded('summary').decode('UTF-8')
         _location = parse_location(event)
-        return simple_builder(_summary, _next, dtend, _location)
+        _status = event.decoded('X-MICROSOFT-CDO-BUSYSTATUS').decode('UTF-8')
+        return simple_builder(_summary, _next, dtend, _location, _status)
 
 
 def parse_event(event):
@@ -135,10 +136,11 @@ def parse_event(event):
     start = event.decoded('dtstart')
     end = event.decoded('dtend')
     location = parse_location(event)
-    return simple_builder(summary, start, end, location)
+    status = event.decoded('X-MICROSOFT-CDO-BUSYSTATUS').decode('UTF-8')
+    return simple_builder(summary, start, end, location, status)
 
 
-def simple_builder(summary, start, end, location):
+def simple_builder(summary, start, end, location, status):
     """
     helper function builds simple dictionary
     """
@@ -146,7 +148,8 @@ def simple_builder(summary, start, end, location):
         'summary': summary,
         'dtstart': start,
         'dtend': end,
-        'location': location
+        'location': location,
+        'status': status
     }
 
 
@@ -191,11 +194,18 @@ def test(verbose=False):
 def get_new_status(calendar_url):
     events = get_today_events(calendar_url)
     now = pytz.utc.localize(datetime.datetime.now())
+    return get_status_for_time(events, now)
+
+
+def get_status_for_time(events, now):
     for event in events:
         if now >= event['dtstart'] and now < event['dtend']:
             logger.debug(f"{event} matched")
             if not event['location'].strip():
-                location = 'likely at my desk'
+                if event['status'] == "OOF":
+                    location = 'out of office'
+                else:
+                    location = 'likely at my desk'
             else:
                 location = 'in ' + event['location']
             return {

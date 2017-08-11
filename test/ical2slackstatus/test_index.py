@@ -21,7 +21,21 @@ def recur_event():
     event.add('dtend', _then)
     event.add('summary', 'FakeEvent')
     event.add('location', 'FakeLocation')
+    event.add('X-MICROSOFT-CDO-BUSYSTATUS', 'OOF')
     return event
+
+
+@pytest.fixture
+def simple_event():
+    _now = pytz.utc.localize(datetime.datetime.utcnow())
+    _later = _now + datetime.timedelta(hours=1)
+    return {
+        'summary': 'FakeEvent',
+        'dtstart': _now,
+        'dtend': _later,
+        'location': '',
+        'status': 'OOF'
+    }
 
 @pytest.mark.skip
 @patch('ical2slackstatus.index.boto3')
@@ -72,10 +86,11 @@ def test_simple_builder():
         'summary': "FakeSummary",
         'dtstart': _now,
         'dtend': _now,
-        'location': "FakeLocation"
+        'location': "FakeLocation",
+        'status': 'OOF'
     }
 
-    result = index.simple_builder(test['summary'], test['dtstart'], test['dtend'], test['location'])
+    result = index.simple_builder(test['summary'], test['dtstart'], test['dtend'], test['location'], test['status'])
     assert result == test
 
 
@@ -84,3 +99,31 @@ def test_date_to_datetime():
     expected_result = pytz.utc.localize(datetime.datetime(to_convert.year, to_convert.month, to_convert.day, 14, 00))
     result = index.date_to_datetime(to_convert)
     assert result == expected_result
+
+
+def test_get_status_for_time_out_of_office_no_location(simple_event):
+    now = pytz.utc.localize(datetime.datetime.utcnow())
+    result = index.get_status_for_time([simple_event], now)
+    assert result['status_text'] == 'FakeEvent out of office'
+
+
+def test_get_status_for_time_out_of_office_location(simple_event):
+    now = pytz.utc.localize(datetime.datetime.utcnow())
+    simple_event['location'] = 'FakeLocation'
+    result = index.get_status_for_time([simple_event], now)
+    assert result['status_text'] == 'FakeEvent in FakeLocation'
+
+
+def test_get_status_for_time_not_out_of_office_no_location(simple_event):
+    now = pytz.utc.localize(datetime.datetime.utcnow())
+    simple_event['status'] = 'BUSY'
+    result = index.get_status_for_time([simple_event], now)
+    assert result['status_text'] == 'FakeEvent likely at my desk'
+
+
+def test_get_status_for_time_not_out_of_office_location(simple_event):
+    now = pytz.utc.localize(datetime.datetime.utcnow())
+    simple_event['status'] = 'BUSY'
+    simple_event['location'] = 'FakeLocation'
+    result = index.get_status_for_time([simple_event], now)
+    assert result['status_text'] == 'FakeEvent in FakeLocation'
