@@ -22,6 +22,7 @@ def recur_event():
     event.add('summary', 'FakeEvent')
     event.add('location', 'FakeLocation')
     event.add('X-MICROSOFT-CDO-BUSYSTATUS', 'OOF')
+    event.add('UID', 'FakeUID')
     return event
 
 
@@ -35,7 +36,9 @@ def simple_event():
         'dtend': _later,
         'location': '',
         'status': 'OOF',
-        'emoji': None
+        'emoji': None,
+        'uid': 'FakeUid',
+        'recur': False
     }
 
 @pytest.mark.skip
@@ -89,10 +92,12 @@ def test_simple_builder():
         'dtend': _now,
         'location': "FakeLocation",
         'status': 'OOF',
-        'emoji': None
+        'emoji': None, 
+        'uid': "FakeUid",
+        'recur': False
     }
 
-    result = index.simple_builder(test['summary'], test['dtstart'], test['dtend'], test['location'], test['status'])
+    result = index.simple_builder(test['summary'], test['dtstart'], test['dtend'], test['location'], test['status'], test['uid'], test['recur'])
     assert result == test
 
 def test_emoji_at_start_of_summary():
@@ -161,3 +166,33 @@ def test_get_status_manual_emoji(simple_event):
     simple_event['emoji'] = ':test:'
     result = index.get_status_for_time([simple_event], now)
     assert result['status_emoji'] == ':test:'
+
+
+def test_clean_recurring_occurances():
+    events = [
+        {
+            'summary': "FakeSummary",
+            'dtstart': 'FakeStart',
+            'dtend': 'FakeEnd',
+            'location': "FakeLocation",
+            'status': 'OOF',
+            'emoji': None,
+            'uid': "FakeUid",
+            'recur': False
+        },
+        {
+            'summary': "FakeSummary",
+            'dtstart': 'FakeStart',
+            'dtend': 'FakeEnd',
+            'location': "FakeLocation",
+            'status': 'OOF',
+            'emoji': None,
+            'uid': "FakeUid",
+            'recur': True
+        }
+    ]
+
+    result = index.clean_recurring_occurances(events)
+    assert len(result) == 1
+    assert result[0]['recur'] == False
+
