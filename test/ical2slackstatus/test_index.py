@@ -1,13 +1,10 @@
 import datetime
 import dateutil.rrule
-import os
 import pytz
 import pytest
 from ical2slackstatus import index
-from icalendar import Event, vRecur, vDatetime
+from icalendar import Event, vRecur
 from unittest.mock import patch, MagicMock
-
-os.environ['S3_ICAL2SLACKSTATUS_PRD_CONFIGBUCKET_BUCKET_NAME'] = "MyFakeNonexistentBucket"
 
 
 @pytest.fixture
@@ -38,21 +35,20 @@ def simple_event():
         'emoji': None
     }
 
-@pytest.mark.skip
+
 @patch('ical2slackstatus.index.boto3')
 def test_handler(boto3_mock):
+    index.bucketname = "MyFakeNonexistentBucket"
     mock_s3_client = boto3_mock.client.return_value = MagicMock()
     mock_s3_resource = boto3_mock.resource.return_value = MagicMock()
 
-    list_bucket_mock = MagicMock(objects={
-
-    })
+    list_bucket_mock = MagicMock()
     mock_s3_resource.Bucket.side_effect = [list_bucket_mock]
 
     get_object_mock = MagicMock(body="")
     mock_s3_client.get_object.side_effect = [get_object_mock]
     index.handler({}, {})
-    del os.environ['S3_ICAL2SLACKSTATUS_PRD_CONFIGBUCKET_BUCKET_NAME']
+    # del os.environ['S3_ICAL2SLACKSTATUS_PRD_CONFIGBUCKET_BUCKET_NAME']
 
 
 def test_today_at():
