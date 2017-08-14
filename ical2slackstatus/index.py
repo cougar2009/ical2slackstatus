@@ -137,39 +137,23 @@ def recurring_parser(event):
     _next = rule.after(yesterday)
     if _next and _next.date() == now.date():
         dtend = _next - duration
-        summary = event.decoded('summary').decode('UTF-8')
-        location = parse_location(event)
-        status = event.decoded('X-MICROSOFT-CDO-BUSYSTATUS').decode('UTF-8')
-        uid = event.decoded('uid').decode('UTF-8')
-        return simple_builder(summary, _next, dtend, location, status, uid, True)
+        return parse_event(event, _next, dtend, True)
 
 
-def parse_event(event):
+def parse_event(event, dtstart=None, dtend=None, recur=False):
     """
     helper function to parse an event into simple form
     """
-    summary = event.decoded('summary').decode('UTF-8')
-    start = event.decoded('dtstart')
-    end = event.decoded('dtend')
-    location = parse_location(event)
-    status = event.decoded('X-MICROSOFT-CDO-BUSYSTATUS').decode('UTF-8')
-    uid = event.decoded('uid').decode('UTF-8')
-    return simple_builder(summary, start, end, location, status, uid, False)
+    emoji, summary = emoji_from_summary(event.decoded('summary').decode('UTF-8'))
 
-
-def simple_builder(summary, start, end, location, status, uid, recur=False):
-    """
-    helper function builds simple dictionary
-    """
-    emoji, summary = emoji_from_summary(summary)
     return {
         'summary': summary,
-        'dtstart': start,
-        'dtend': end,
-        'location': location,
-        'status': status,
+        'dtstart': dtstart or event.decoded('dtstart'),
+        'dtend': dtend or event.decoded('dtend'),
+        'location': parse_location(event),
+        'status': event.decoded('X-MICROSOFT-CDO-BUSYSTATUS').decode('UTF-8'),
         'emoji': emoji,
-        'uid': uid,
+        'uid': event.decoded('uid').decode('UTF-8'),
         'recur': recur
     }
 

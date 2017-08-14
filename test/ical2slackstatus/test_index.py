@@ -80,25 +80,15 @@ def test_recurring_parser(recur_event):
 
 
 def test_parse_event(recur_event):
-    result = index.parse_event(recur_event)
+    LOCAL = pytz.timezone('America/Denver')
+    _now = LOCAL.localize(datetime.datetime.now())
+    _then = _now - datetime.timedelta(hours=1)
+    result = index.parse_event(recur_event, _now, _then, True)
     assert result['summary'] == 'FakeEvent'
+    assert result['dtstart'] == _now
+    assert result['dtend'] == _then
+    assert result['recur']
 
-
-def test_simple_builder():
-    _now = datetime.datetime.now()
-    test = {
-        'summary': "FakeSummary",
-        'dtstart': _now,
-        'dtend': _now,
-        'location': "FakeLocation",
-        'status': 'OOF',
-        'emoji': None, 
-        'uid': "FakeUid",
-        'recur': False
-    }
-
-    result = index.simple_builder(test['summary'], test['dtstart'], test['dtend'], test['location'], test['status'], test['uid'], test['recur'])
-    assert result == test
 
 def test_emoji_at_start_of_summary():
     emoji, summary = index.emoji_from_summary(":some_emoji: Some Summary")
