@@ -48,7 +48,6 @@ def test_handler(boto3_mock):
     get_object_mock = MagicMock(body="")
     mock_s3_client.get_object.side_effect = [get_object_mock]
     index.handler({}, {})
-    # del os.environ['S3_ICAL2SLACKSTATUS_PRD_CONFIGBUCKET_BUCKET_NAME']
 
 
 def test_today_at():
