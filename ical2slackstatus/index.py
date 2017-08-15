@@ -242,8 +242,8 @@ def get_status_for_time(events, now):
 
 def handler(event, context):
     if 'loglevel' in event:
-        if event['loglevel'] in ['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
-            logger.setLevel(event['loglevel'])
+        if event['loglevel'].upper() in ['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']:
+            logger.setLevel(event['loglevel'].upper())
     configs = get_config_objects()
     for config in configs:
         try:
