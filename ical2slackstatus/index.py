@@ -84,7 +84,21 @@ def get_today_events(cal_url):
                 _today_events.append(parse_event(event))
             else:
                 logger.debug(f"{event} is not for today")
+    _today_events = clean_recurring_occurances(_today_events)
     return _today_events
+
+
+def clean_recurring_occurances(events):
+    """
+    Takes all events for a day and splits them into two lists recurring and not recurring
+    if duplicate UID exists in not_recur and recur it is removed from recur
+    """
+    recur = [event for event in events if event['recur']]
+    not_recur = [event for event in events if not event['recur']]
+
+    for x in not_recur:
+        recur[:] = [event for event in recur if event['uid'] != x['uid']]
+    return recur + not_recur
 
 
 def parse_location(event):
@@ -116,44 +130,31 @@ def recurring_parser(event):
     occurance is set for today if it is returns simplified dictionary
     """
     one_day = datetime.timedelta(days=1)
-    _now = pytz.utc.localize(datetime.datetime.utcnow())
-    _yesterday = _now - one_day
-    _duration = event.get('dtstart').dt - event.get('dtend').dt
+    now = pytz.utc.localize(datetime.datetime.utcnow())
+    yesterday = now - one_day
+    duration = event.get('dtstart').dt - event.get('dtend').dt
     rule = get_rrule(event)
-    _next = rule.after(_yesterday)
-    if _next and _next.date() == _now.date():
-        # in order to fix recuring event with exceptions or edits the psuedo logic is the following
-        # if event today with recurrence id and where summary == recurrec summary recurrent event
-        dtend = _next - _duration
-        _summary = event.decoded('summary').decode('UTF-8')
-        _location = parse_location(event)
-        _status = event.decoded('X-MICROSOFT-CDO-BUSYSTATUS').decode('UTF-8')
-        return simple_builder(_summary, _next, dtend, _location, _status)
+    _next = rule.after(yesterday)
+    if _next and _next.date() == now.date():
+        dtend = _next - duration
+        return parse_event(event, _next, dtend, True)
 
-def parse_event(event):
+
+def parse_event(event, dtstart=None, dtend=None, recur=False):
     """
     helper function to parse an event into simple form
     """
-    summary = event.decoded('summary').decode('UTF-8')
-    start = event.decoded('dtstart')
-    end = event.decoded('dtend')
-    location = parse_location(event)
-    status = event.decoded('X-MICROSOFT-CDO-BUSYSTATUS').decode('UTF-8')
-    return simple_builder(summary, start, end, location, status)
+    emoji, summary = emoji_from_summary(event.decoded('summary').decode('UTF-8'))
 
-
-def simple_builder(summary, start, end, location, status):
-    """
-    helper function builds simple dictionary
-    """
-    emoji, summary = emoji_from_summary(summary)
     return {
         'summary': summary,
-        'dtstart': start,
-        'dtend': end,
-        'location': location,
-        'status': status,
-        'emoji': emoji
+        'dtstart': dtstart or event.decoded('dtstart'),
+        'dtend': dtend or event.decoded('dtend'),
+        'location': parse_location(event),
+        'status': event.decoded('X-MICROSOFT-CDO-BUSYSTATUS').decode('UTF-8'),
+        'emoji': emoji,
+        'uid': event.decoded('uid').decode('UTF-8'),
+        'recur': recur
     }
 
 

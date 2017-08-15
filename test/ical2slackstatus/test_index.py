@@ -22,6 +22,7 @@ def recur_event():
     event.add('summary', 'FakeEvent')
     event.add('location', 'FakeLocation')
     event.add('X-MICROSOFT-CDO-BUSYSTATUS', 'OOF')
+    event.add('UID', 'FakeUID')
     return event
 
 
@@ -35,7 +36,9 @@ def simple_event():
         'dtend': _later,
         'location': '',
         'status': 'OOF',
-        'emoji': None
+        'emoji': None,
+        'uid': 'FakeUid',
+        'recur': False
     }
 
 @pytest.mark.skip
@@ -77,23 +80,15 @@ def test_recurring_parser(recur_event):
 
 
 def test_parse_event(recur_event):
-    result = index.parse_event(recur_event)
+    LOCAL = pytz.timezone('America/Denver')
+    _now = LOCAL.localize(datetime.datetime.now())
+    _then = _now - datetime.timedelta(hours=1)
+    result = index.parse_event(recur_event, _now, _then, True)
     assert result['summary'] == 'FakeEvent'
+    assert result['dtstart'] == _now
+    assert result['dtend'] == _then
+    assert result['recur']
 
-
-def test_simple_builder():
-    _now = datetime.datetime.now()
-    test = {
-        'summary': "FakeSummary",
-        'dtstart': _now,
-        'dtend': _now,
-        'location': "FakeLocation",
-        'status': 'OOF',
-        'emoji': None
-    }
-
-    result = index.simple_builder(test['summary'], test['dtstart'], test['dtend'], test['location'], test['status'])
-    assert result == test
 
 def test_emoji_at_start_of_summary():
     emoji, summary = index.emoji_from_summary(":some_emoji: Some Summary")
@@ -161,3 +156,33 @@ def test_get_status_manual_emoji(simple_event):
     simple_event['emoji'] = ':test:'
     result = index.get_status_for_time([simple_event], now)
     assert result['status_emoji'] == ':test:'
+
+
+def test_clean_recurring_occurances():
+    events = [
+        {
+            'summary': "FakeSummary",
+            'dtstart': 'FakeStart',
+            'dtend': 'FakeEnd',
+            'location': "FakeLocation",
+            'status': 'OOF',
+            'emoji': None,
+            'uid': "FakeUid",
+            'recur': False
+        },
+        {
+            'summary': "FakeSummary",
+            'dtstart': 'FakeStart',
+            'dtend': 'FakeEnd',
+            'location': "FakeLocation",
+            'status': 'OOF',
+            'emoji': None,
+            'uid': "FakeUid",
+            'recur': True
+        }
+    ]
+
+    result = index.clean_recurring_occurances(events)
+    assert len(result) == 1
+    assert result[0]['recur'] == False
+
