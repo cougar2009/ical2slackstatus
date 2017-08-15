@@ -20,6 +20,7 @@ import yaml
 import json
 import pytz
 import boto3
+import random
 import logging
 import textwrap
 import datetime
@@ -206,6 +207,17 @@ def get_new_status(calendar_url):
     return get_status_for_time(events, now)
 
 
+def default_emoji():
+    """
+    Randomly pick between a set of default emojis
+    """
+    default_emojis = [':calendar:', ':date:', ':spiral_calendar_pod:',
+    ':man_in_business_suit_levitating:', ':post_office:',
+    ':european_post_office:', ':computer:', ':watch:', ':keyboard:',
+    ':desktop_computer:']
+    return random.choice(default_emojis)
+
+
 def get_status_for_time(events, now):
     for event in events:
         if now >= event['dtstart'] and now < event['dtend']:
@@ -220,7 +232,7 @@ def get_status_for_time(events, now):
             return {
                 # need to truncate the status to at most 100 characters as that's the max the users.profile.set API allows
                 'status_text': "{} {}".format(textwrap.shorten(event['summary'], 100-1-len(location)), location),
-                'status_emoji': event['emoji'] or ':calendar:'
+                'status_emoji': event['emoji'] or default_emoji()
             }
         else:
             logger.debug(f"{event} did not match")

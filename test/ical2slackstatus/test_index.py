@@ -143,7 +143,8 @@ def test_get_status_for_time_not_out_of_office_location(simple_event):
 def test_get_status_default_emoji(simple_event):
     now = pytz.utc.localize(datetime.datetime.utcnow())
     result = index.get_status_for_time([simple_event], now)
-    assert result['status_emoji'] == ':calendar:'
+    assert result['status_emoji'].startswith(':')
+    assert result['status_emoji'].endswith(':')
 
 
 def test_get_status_manual_emoji(simple_event):
@@ -181,3 +182,7 @@ def test_clean_recurring_occurances():
     assert len(result) == 1
     assert result[0]['recur'] == False
 
+def test_default_emoji():
+    emoji = index.default_emoji()
+    assert emoji.startswith(':')
+    assert emoji.endswith(':')
