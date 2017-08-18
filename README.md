@@ -3,7 +3,7 @@ Automatically set your slack status based on the events in your calendar.
 
 ## How to get in on the action
 ### Executive Summary
-1. Create a file called <your net id>.yml (use example_config.yml as a guide).
+1. Create a file called "YOUR NET ID".yml (use example_config.yml as a guide) and follow the instructions in that example file.
 2. Login to prd-appdev-oit-byu
 3. Upload your yml file to the ical2slackstatus-prd-configbucket-s3 bucket in s3.
 
